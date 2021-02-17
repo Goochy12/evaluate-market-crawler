@@ -59,8 +59,10 @@ def nextPageInTable(nextPageButtonXPath):
     wait.until(EC.element_to_be_clickable((By.XPATH, nextPageButtonXPath))).click()
     return
 
-def getTableRow(tableXPath):
-    return 
+def getTableRows(tableXPath):
+    table = wait.until(EC.presence_of_element_located((By.XPATH, tableXPath)))
+    rows = table.find_elements_by_tag_name('tr')
+    return rows
 
 if __name__ == '__main__':
     browser = openSite(url)
@@ -75,6 +77,10 @@ if __name__ == '__main__':
     changeRowCount(rowCounterXpath, numberOfRowsXPath)
     nextPageInTable(nextPageButtonXPath)
 
-    getTableRow(tableXPath)
+    rows = getTableRows(tableXPath)
+    for eachRow in rows:
+        col = eachRow.find_elements_by_tag_name('td')
+        for eachCol in col:
+            print(eachCol.text)
 
     # browser.find_element_by_xpath('//*[@id="rc-tabs-0-panel-1"]/div/div/div/ul/li[10]/div/div[1]').click()
