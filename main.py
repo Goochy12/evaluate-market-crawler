@@ -10,12 +10,13 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 import time
 
-url = 'https://evaluate.market/moments'
+url = 'https://evaluate.market/editions'
 playerSelectXPath = '//*[@id="root"]/div/section/main/div/div/div/div/div[1]/div/div[2]/div/div[2]/div[2]/div/div'
 rowCounterXpath = '//*[@id="rc-tabs-0-panel-1"]/div/div/div/ul/li[10]/div/div[1]'
-numberOfRowsXPath = '//*[@id="rc-tabs-0-panel-1"]/div/div/div/ul/li[10]/div/div[2]/div/div/div/div[2]/div/div/div/div[4]'
+numberOfRowsXPath = '//*[@id="rc-tabs-0-panel-1"]/div/div/div/ul/li[10]/div/div[2]/div/div/div/div[2]/div/div/div/div[5]'
 nextPageButtonXPath = '//*[@id="rc-tabs-0-panel-1"]/div/div/div/ul/li[9]/button'
 tableXPath = '//*[@id="rc-tabs-0-panel-1"]/div/div/div/div/div/div/table'
+dummyRowXPath = '//*[@id="rc-tabs-0-panel-1"]/div/div/div/div/div/div/table/tbody/tr[2]'
 wait = None
 
 def openSite(url):
@@ -23,9 +24,10 @@ def openSite(url):
     browser.get(url)
     return browser
 
-def getPlayerNames(browser, mui, playerDropdownInput):
+def getPlayerNames(mui, playerDropdownInput):
     playerDropdownInput.click()
-    unorderedList = browser.find_elements_by_id(mui + "-popup")[0]
+    id = mui + "-popup"
+    unorderedList = wait.until(EC.presence_of_element_located((By.ID,id)))
     players = unorderedList.find_elements_by_tag_name("li")
     playerDropdownInput.click()
     return players
@@ -42,12 +44,10 @@ def getMUI(playerDropdownInput):
     playerDropdownInput.click()
     return mui
 
-def saveToFile():
-    return
-
-def selectPlayer(playerDropdownInput,browser,mui,option):
+def selectPlayer(playerDropdownInput,mui,option):
     playerDropdownInput.click()
-    browser.find_element_by_id(mui + "-option-" + str(option)).click()
+    id = mui + "-option-" + str(option)
+    wait.until(EC.element_to_be_clickable((By.ID,id))).click()
     return
 
 def changeRowCount(rowCounterXpath, numberOfRowsXPath):
@@ -61,8 +61,13 @@ def nextPageInTable(nextPageButtonXPath):
 
 def getTableRows(tableXPath):
     table = wait.until(EC.presence_of_element_located((By.XPATH, tableXPath)))
+    time.sleep(2)
     rows = table.find_elements_by_tag_name('tr')
+
     return rows
+
+def saveToFile():
+    return
 
 if __name__ == '__main__':
     browser = openSite(url)
@@ -72,15 +77,16 @@ if __name__ == '__main__':
     playerDropdownInput = getPlayerDropdownInput(playerSelectXPath)
     mui = getMUI(playerDropdownInput)
 
-    selectPlayer(playerDropdownInput,browser,mui,0)
+    selectPlayer(playerDropdownInput,mui,0)
 
     changeRowCount(rowCounterXpath, numberOfRowsXPath)
-    nextPageInTable(nextPageButtonXPath)
 
     rows = getTableRows(tableXPath)
     for eachRow in rows:
         col = eachRow.find_elements_by_tag_name('td')
         for eachCol in col:
             print(eachCol.text)
+
+    # nextPageInTable(nextPageButtonXPath)
 
     # browser.find_element_by_xpath('//*[@id="rc-tabs-0-panel-1"]/div/div/div/ul/li[10]/div/div[1]').click()
