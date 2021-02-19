@@ -8,15 +8,19 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.action_chains import ActionChains
 import time
 
 url = 'https://evaluate.market/editions'
 playerSelectXPath = '//*[@id="root"]/div/section/main/div/div/div/div/div[1]/div/div[2]/div/div[2]/div[2]/div/div'
 rowCounterXpath = '//*[@id="rc-tabs-0-panel-1"]/div/div/div/ul/li[10]/div/div[1]'
 numberOfRowsXPath = '//*[@id="rc-tabs-0-panel-1"]/div/div/div/ul/li[10]/div/div[2]/div/div/div/div[2]/div/div/div/div[5]'
-nextPageButtonXPath = '//*[@id="rc-tabs-0-panel-1"]/div/div/div/ul/li[9]/button'
+nextPageButtonXPathL4 = '//*[@id="rc-tabs-0-panel-1"]/div/div/div/ul/li[9]/button'
+nextPageButtonXPath4 = '//*[@id="rc-tabs-0-panel-1"]/div/div/div/ul/li[10]/button'
+nextPageButtonXPathG4 = '//*[@id="rc-tabs-0-panel-1"]/div/div/div/ul/li[11]/button'
 tableXPath = '//*[@id="rc-tabs-0-panel-1"]/div/div/div/div/div/div/table'
 dummyRowXPath = '//*[@id="rc-tabs-0-panel-1"]/div/div/div/div/div/div/table/tbody/tr[2]'
+spinnerClassName = 'ant-spin-blur'
 wait = None
 
 def openSite(url):
@@ -55,9 +59,17 @@ def changeRowCount(rowCounterXpath, numberOfRowsXPath):
     wait.until(EC.element_to_be_clickable((By.XPATH,numberOfRowsXPath))).click()
     return
 
-def nextPageInTable(nextPageButtonXPath):
+def nextPageInTable(pageNumber):
+    nextPageButtonXPath = None
+    if pageNumber < 3:
+        nextPageButtonXPath = nextPageButtonXPathL4
+    elif pageNumber == 3:
+        nextPageButtonXPath = nextPageButtonXPath4
+    else:
+        nextPageButtonXPath = nextPageButtonXPathG4
+
+    wait.until(EC.invisibility_of_element_located((By.CLASS_NAME,spinnerClassName)))
     wait.until(EC.element_to_be_clickable((By.XPATH, nextPageButtonXPath))).click()
-    return
 
 def getTableRows(tableXPath):
     table = wait.until(EC.presence_of_element_located((By.XPATH, tableXPath)))
@@ -66,10 +78,7 @@ def getTableRows(tableXPath):
 
     return rows
 
-def saveToFile():
-    return
-
-if __name__ == '__main__':
+def run():
     browser = openSite(url)
 
     wait = WebDriverWait(browser,20)
@@ -86,6 +95,34 @@ if __name__ == '__main__':
         col = eachRow.find_elements_by_tag_name('td')
         for eachCol in col:
             print(eachCol.text)
+    return
+
+def saveToFile():
+    return
+
+if __name__ == '__main__':
+    browser = openSite(url)
+    browser.maximize_window()
+
+    wait = WebDriverWait(browser,20)
+
+    playerDropdownInput = getPlayerDropdownInput(playerSelectXPath)
+    mui = getMUI(playerDropdownInput)
+
+    selectPlayer(playerDropdownInput,mui,0)
+
+    changeRowCount(rowCounterXpath, numberOfRowsXPath)
+
+    i = 1
+    for i in range(25):
+        nextPageInTable(i)
+        i += 1
+
+    # rows = getTableRows(tableXPath)
+    # for eachRow in rows:
+    #     col = eachRow.find_elements_by_tag_name('td')
+    #     for eachCol in col:
+    #         print(eachCol.text)
 
     # nextPageInTable(nextPageButtonXPath)
 
