@@ -20,7 +20,7 @@ dropdownClassName = 'MuiAutocomplete-listbox'
 wait = None
 tableFileName = 'marketplace_data.csv'
 playerFileName = 'players.csv'
-playerNames = []
+browser = None
 
 def openFileA(filename, format):
     return open(filename, 'a+', encoding=format)
@@ -193,6 +193,42 @@ def saveTable(playerNames, playerDropdownInput, playerMui):
 
     return
 
+def saveTableCustom(playerNames, playerDropdownInput, playerMui, playerStart, momentStart):
+    tableFile = openFileA(tableFileName, "utf-8")
+    first = True
+    for player in range(playerStart,len(playerNames)):
+        selectPlayer(playerDropdownInput, playerMui, player)
+
+        momentsDropdownInput = getPlayerMomentsInput()
+        momentsMui = getMomentsMui(momentsDropdownInput)
+        momentsNames = getMomentsNames(momentsDropdownInput)
+        # changeRowCount(rowCounterXpath, numberOfRowsXPath)
+
+        if first == False:
+            momentStart = 0
+
+        for moment in range(momentStart,len(momentsNames)):
+            selectMoment(momentsDropdownInput,momentsMui,moment)
+            # iterate through table
+            npFlag = True
+            while npFlag == True:
+                rows = getTableRows(tableXPath)
+                for eachRow in rows:
+                    # player, dunkname, rest
+                    rawRowData = getDataElementsFromRow(eachRow)
+                    if rawRowData != None:
+                        data = getRowData(rawRowData)
+                        data.insert(0, playerNames[player])
+                        data[1] = momentsNames[moment]
+                        if data != None:
+                            saveRow(tableFile, data)
+                npFlag = nextPageInTable()
+        first = False
+
+    tableFile.close()
+
+    return
+
 def testSaveTable(playerNames, playerDropdownInput, playerMui):
     tableFile = openFileA(tableFileName, "utf-8")
     selectPlayer(playerDropdownInput, playerMui, 1)
@@ -224,24 +260,74 @@ def testSaveTable(playerNames, playerDropdownInput, playerMui):
 
     return
 
+def test(browser):
+    tableFile = openFileA(tableFileName, "utf-8")
+    playerDropdownInput = getPlayerDropdownInput(playerSelectXPath)
+    playerMui = getPlayerMUI(playerDropdownInput)
+    playerNames = getPlayerNames(playerDropdownInput)
+
+    for player in range(len(playerNames)):
+        selectPlayer(playerDropdownInput, playerMui, player)
+
+        momentsDropdownInput = getPlayerMomentsInput()
+        momentsMui = getMomentsMui(momentsDropdownInput)
+        momentsNames = getMomentsNames(momentsDropdownInput)
+        # changeRowCount(rowCounterXpath, numberOfRowsXPath)
+
+        for moment in range(len(momentsNames)):
+            selectMoment(momentsDropdownInput,momentsMui,moment)
+            # iterate through table
+            npFlag = True
+            while npFlag == True:
+                rows = getTableRows(tableXPath)
+                for eachRow in rows:
+                    # player, dunkname, rest
+                    rawRowData = getDataElementsFromRow(eachRow)
+                    if rawRowData != None:
+                        data = getRowData(rawRowData)
+                        data.insert(0, playerNames[player])
+                        data[1] = momentsNames[moment]
+                        if data != None:
+                            saveRow(tableFile, data)
+                npFlag = nextPageInTable()
+
+            browser.get(url)
+            playerDropdownInput = getPlayerDropdownInput(playerSelectXPath)
+            playerMui = getPlayerMUI(playerDropdownInput)
+            selectPlayer(playerDropdownInput,playerMui,player)
+
+            momentsDropdownInput = getPlayerMomentsInput()
+            momentsMui = getMomentsMui(momentsDropdownInput)
+
+        browser.get(url)
+        playerDropdownInput = getPlayerDropdownInput(playerSelectXPath)
+        playerMui = getPlayerMUI(playerDropdownInput)
+
+    tableFile.close()
+
+    return
+
 def run():
-    global wait, playerNames
+    global wait, browser
 
     browser = openSite(url)
     browser.maximize_window()
 
     wait = WebDriverWait(browser,20)
 
-    playerDropdownInput = getPlayerDropdownInput(playerSelectXPath)
-    playerMui = getPlayerMUI(playerDropdownInput)
-    playerNames = getPlayerNames(playerDropdownInput)
+    # playerDropdownInput = getPlayerDropdownInput(playerSelectXPath)
+    # playerMui = getPlayerMUI(playerDropdownInput)
+    # playerNames = getPlayerNames(playerDropdownInput)
 
     # momentsNames = getMomentsNames(momentsDropdownInput)
     # print(momentsNames)
 
     # savePlayerNames(playerNames)
-    saveTable(playerNames, playerDropdownInput, playerMui)
+    # saveTable(playerNames, playerDropdownInput, playerMui)
+    # saveTableCustom(playerNames, playerDropdownInput, playerMui,2,0)
     # testSaveTable(playerNames, playerDropdownInput, playerMui)
+
+    test(browser)
 
     browser.quit()
 
