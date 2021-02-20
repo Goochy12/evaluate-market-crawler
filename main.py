@@ -4,6 +4,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 import time
+import os
 
 url = 'https://evaluate.market/editions'
 playerSelectXPath = '//*[@id="root"]/div/section/main/div/div/div/div/div[1]/div/div[2]/div/div[2]/div[2]/div/div'
@@ -34,8 +35,6 @@ def openSite(url):
 
 def getPlayerNamesElements(playerDropdownInput):
     global wait
-    playerDropdownInput.click()
-    # id = mui + "-popup"
     unorderedList = wait.until(EC.presence_of_element_located((By.CLASS_NAME, dropdownClassName)))
     players = unorderedList.find_elements_by_tag_name("li")
     return players
@@ -46,7 +45,7 @@ def getPlayerDropdownInput(playerSelectXPath):
     playerDropdownInput = playerDropdown.find_element_by_tag_name('input')
     return playerDropdownInput
 
-def getMUI(playerDropdownInput):
+def getPlayerMUI(playerDropdownInput):
     playerDropdownInput.click()
     mui = playerDropdownInput.get_attribute('id')
     playerDropdownInput.click()
@@ -84,10 +83,9 @@ def getTableRows(tableXPath):
 
 def getRowData(row):
     d = []
-    if row[1] != '':
-        for eachData in row:
-            d.append(eachData.text)
-        return d
+    for eachData in row:
+        d.append(eachData.text)
+    return d
     return None
 
 def saveRow(file, rowData):
@@ -95,6 +93,8 @@ def saveRow(file, rowData):
         appendToFile(file,eachData)
         appendToFile(file,',')
     appendToFile(file,'\n')
+    file.flush()
+    os.fsync(file.fileno())
 
 def getDataElementsFromRow(row):
     rawRowElements = row.find_elements_by_tag_name('td')
@@ -105,11 +105,25 @@ def getDataElementsFromRow(row):
 def appendToFile(file,item):
     file.write(item)
 
-def getPlayerNames(playerNameElements):
-    global playerNames
-    for eachPlayer in playerNameElements:
-        playerNames.append(eachPlayer.text)
+def getElementText(elements):
+    text = []
+    for eachText in elements:
+        text.append(eachText.text)
+    return text
+
+def getPlayerNames(playerDropdownInput):
+    playerDropdownInput.click()
+    playerNameElements = getPlayerNamesElements(playerDropdownInput)
+    playerNames = getElementText(playerNameElements)
+    playerDropdownInput.click()
     return playerNames
+
+def getMomentsNames(momentsDropdownInput):
+    momentsDropdownInput.click()
+    momentsElements = getPlayerMomentsElements(momentsDropdownInput)
+    momentsNames = getElementText(momentsElements)
+    momentsDropdownInput.click()
+    return momentsNames
 
 def getPlayerMomentsInput():
     global wait
@@ -119,11 +133,26 @@ def getPlayerMomentsInput():
 
 def getPlayerMomentsElements(momentsDropDownInput):
     global wait
-    momentsDropDownInput.click()
     # id = mui + "-popup"
-    unorderedList = wait.until(EC.presence_of_element_located((By.CLASS_NAME, dropdownClassName)))
-    momentsElements = unorderedList.find_elements_by_tag_name("li")
-    return momentsElements
+    try:
+        unorderedList = wait.until(EC.presence_of_element_located((By.CLASS_NAME, dropdownClassName)))
+        momentsElements = unorderedList.find_elements_by_tag_name("li")
+        return momentsElements
+    except:
+        return []
+
+def selectMoment(momentsDropdownInput,mui,option):
+    global wait
+    momentsDropdownInput.click()
+    id = mui + "-option-" + str(option)
+    wait.until(EC.element_to_be_clickable((By.ID,id))).click()
+    return
+
+def getMomentsMui(momentsDropdownInput):
+    momentsDropdownInput.click()
+    mui = momentsDropdownInput.get_attribute('id')
+    momentsDropdownInput.click()
+    return mui
 
 def savePlayerNames(playerNames):
     playerFile = openFileA(playerFileName, "utf-16")
@@ -133,51 +162,64 @@ def savePlayerNames(playerNames):
     playerFile.close()
     return
 
-def saveTable(playerCount, playerDropdownInput, mui):
-    global playerNames
+def saveTable(playerNames, playerDropdownInput, playerMui):
     tableFile = openFileA(tableFileName, "utf-8")
-    for i in range(playerCount):
-        selectPlayer(playerDropdownInput, mui, i)
+    for player in range(len(playerNames)):
+        selectPlayer(playerDropdownInput, playerMui, player)
+
+        momentsDropdownInput = getPlayerMomentsInput()
+        momentsMui = getMomentsMui(momentsDropdownInput)
+        momentsNames = getMomentsNames(momentsDropdownInput)
         # changeRowCount(rowCounterXpath, numberOfRowsXPath)
 
-        # iterate through table
-        npFlag = True
-        while npFlag == True:
-            first = 0
-            rows = getTableRows(tableXPath)
-            for eachRow in rows:
-                if first >= 2:
+        for moment in range(len(momentsNames)):
+            selectMoment(momentsDropdownInput,momentsMui,moment)
+            # iterate through table
+            npFlag = True
+            while npFlag == True:
+                rows = getTableRows(tableXPath)
+                for eachRow in rows:
                     # player, dunkname, rest
                     rawRowData = getDataElementsFromRow(eachRow)
                     if rawRowData != None:
                         data = getRowData(rawRowData)
+                        data.insert(0, playerNames[player])
+                        data[1] = momentsNames[moment]
                         if data != None:
                             saveRow(tableFile, data)
-                first += 1
-            npFlag = nextPageInTable()
+                npFlag = nextPageInTable()
 
     tableFile.close()
 
     return
 
-def testTableSave(playerDropdownInput, mui):
-    global playerNames
-
+def testSaveTable(playerNames, playerDropdownInput, playerMui):
     tableFile = openFileA(tableFileName, "utf-8")
-    selectPlayer(playerDropdownInput, mui, 0)
-    # changeRowCount(rowCounterXpath, numberOfRowsXPath)
+    selectPlayer(playerDropdownInput, playerMui, 1)
 
-    rows = getTableRows(tableXPath)
-    first = 0
-    for eachRow in rows:
-        if first >= 2:
-            rawRowData = getDataElementsFromRow(eachRow)
-            if rawRowData != None:
-                data = getRowData(rawRowData)
-                print(data)
-                if data != None:
-                    saveRow(tableFile, data)
-        first += 1
+    momentsDropdownInput = getPlayerMomentsInput()
+    momentsMui = getMomentsMui(momentsDropdownInput)
+    momentsNames = getMomentsNames(momentsDropdownInput)
+    # changeRowCount(rowCounterXpath, numberOfRowsXPath)
+    print(momentsNames)
+
+    for moment in range(len(momentsNames)):
+        selectMoment(momentsDropdownInput, momentsMui, moment)
+        # iterate through table
+        npFlag = True
+        while npFlag == True:
+            rows = getTableRows(tableXPath)
+            for eachRow in rows:
+                # player, dunkname, rest
+                rawRowData = getDataElementsFromRow(eachRow)
+                if rawRowData != None:
+                    data = getRowData(rawRowData)
+                    data.insert(0, playerNames[player])
+                    data[1] = momentsNames[moment]
+                    if data != None:
+                        saveRow(tableFile, data)
+            npFlag = nextPageInTable()
+
     tableFile.close()
 
     return
@@ -185,24 +227,24 @@ def testTableSave(playerDropdownInput, mui):
 def run():
     global wait, playerNames
 
-
-
     browser = openSite(url)
     browser.maximize_window()
 
     wait = WebDriverWait(browser,20)
 
     playerDropdownInput = getPlayerDropdownInput(playerSelectXPath)
-    mui = getMUI(playerDropdownInput)
+    playerMui = getPlayerMUI(playerDropdownInput)
+    playerNames = getPlayerNames(playerDropdownInput)
 
-    playerNameElements = getPlayerNamesElements(playerDropdownInput)
-    playerNames = getPlayerNames(playerNameElements)
-    playerDropdownInput.click()
-    playerCount = len(playerNames)
+    # momentsNames = getMomentsNames(momentsDropdownInput)
+    # print(momentsNames)
 
     # savePlayerNames(playerNames)
-    # saveTable(playerCount, playerDropdownInput, mui)
-    testTableSave(playerDropdownInput,mui)
+    saveTable(playerNames, playerDropdownInput, playerMui)
+    # testSaveTable(playerNames, playerDropdownInput, playerMui)
+
+    browser.quit()
+
     return
 
 def saveToFile():
