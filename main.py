@@ -7,10 +7,14 @@ import time
 import os
 
 url = 'https://evaluate.market/editions'
-playerSelectXPath = '//*[@id="root"]/div/section/main/div/div/div/div/div[1]/div/div[2]/div/div[2]/div[2]/div/div'
-momentSelectXPath = '//*[@id="root"]/div/section/main/div/div/div/div/div[1]/div/div[2]/div/div[2]/div[3]/div[2]/div/div'
-rowCounterXpath = '//*[@id="rc-tabs-0-panel-1"]/div/div/div/ul/li[10]/div/div[1]'
-numberOfRowsXPath = '//*[@id="rc-tabs-0-panel-1"]/div/div/div/ul/li[10]/div/div[2]/div/div/div/div[2]/div/div/div/div[5]'
+# playerSelectXPath = '//*[@id="root"]/div/section/main/div/div/div/div/div[1]/div/div[2]/div/div[2]/div[2]/div/div'
+playerSelectXPath = '//*[@id="root"]/div/section/main/div/div/div/div/div[1]/div/div[2]/div/div[2]/div/div[1]/div[2]/div/div'
+# momentSelectXPath = '//*[@id="root"]/div/section/main/div/div/div/div/div[1]/div/div[2]/div/div[2]/div[3]/div[2]/div/div'
+momentSelectXPath = '//*[@id="root"]/div/section/main/div/div/div/div/div[1]/div/div[2]/div/div[2]/div/div[2]/div[2]/div/div'
+# rowCounterXpath = '//*[@id="rc-tabs-0-panel-1"]/div/div/div/ul/li[10]/div/div[1]'
+# numberOfRowsXPath = '//*[@id="rc-tabs-0-panel-1"]/div/div/div/ul/li[10]/div/div[2]/div/div/div/div[2]/div/div/div/div[5]'
+rowCounterClass = 'ant-select-selector'
+numberOfRowsXPath = '//*[@id="rc-tabs-0-panel-1"]/div/div/div/ul/li[7]/div/div[2]/div/div/div/div[2]/div/div/div/div[5]'
 nextPageButtonClass = 'ant-pagination-next'
 nextPageButtonDisabledClass = 'ant-pagination-disabled'
 tableXPath = '//*[@id="rc-tabs-0-panel-1"]/div/div/div/div/div/div/table'
@@ -21,6 +25,8 @@ wait = None
 tableFileName = 'marketplace_data.csv'
 playerFileName = 'players.csv'
 browser = None
+
+deleteSpinnerCookie = "var spinner = document.getElementsByClassName(" + spinnerClassName + ");element[0].remove();"
 
 def openFileA(filename, format):
     return open(filename, 'a+', encoding=format)
@@ -60,7 +66,7 @@ def selectPlayer(playerDropdownInput,mui,option):
 
 def changeRowCount(rowCounterXpath, numberOfRowsXPath):
     global wait
-    wait.until(EC.element_to_be_clickable((By.XPATH,rowCounterXpath))).click()
+    wait.until(EC.element_to_be_clickable((By.CLASS_NAME,rowCounterXpath))).click()
     wait.until(EC.element_to_be_clickable((By.XPATH,numberOfRowsXPath))).click()
     return
 
@@ -250,7 +256,7 @@ def testSaveTable(playerNames, playerDropdownInput, playerMui):
                 rawRowData = getDataElementsFromRow(eachRow)
                 if rawRowData != None:
                     data = getRowData(rawRowData)
-                    data.insert(0, playerNames[player])
+                    data.insert(0, playerNames[1])
                     data[1] = momentsNames[moment]
                     if data != None:
                         saveRow(tableFile, data)
@@ -276,6 +282,10 @@ def test(browser):
 
         for moment in range(len(momentsNames)):
             selectMoment(momentsDropdownInput,momentsMui,moment)
+            try:
+                changeRowCount(rowCounterClass,numberOfRowsXPath)
+            except:
+                pass
             # iterate through table
             npFlag = True
             while npFlag == True:
@@ -291,17 +301,17 @@ def test(browser):
                             saveRow(tableFile, data)
                 npFlag = nextPageInTable()
 
-            browser.get(url)
-            playerDropdownInput = getPlayerDropdownInput(playerSelectXPath)
-            playerMui = getPlayerMUI(playerDropdownInput)
-            selectPlayer(playerDropdownInput,playerMui,player)
+            # browser.get(url)
+            # playerDropdownInput = getPlayerDropdownInput(playerSelectXPath)
+            # playerMui = getPlayerMUI(playerDropdownInput)
+            # selectPlayer(playerDropdownInput,playerMui,player)
+            #
+            # momentsDropdownInput = getPlayerMomentsInput()
+            # momentsMui = getMomentsMui(momentsDropdownInput)
 
-            momentsDropdownInput = getPlayerMomentsInput()
-            momentsMui = getMomentsMui(momentsDropdownInput)
-
-        browser.get(url)
-        playerDropdownInput = getPlayerDropdownInput(playerSelectXPath)
-        playerMui = getPlayerMUI(playerDropdownInput)
+        # browser.get(url)
+        # playerDropdownInput = getPlayerDropdownInput(playerSelectXPath)
+        # playerMui = getPlayerMUI(playerDropdownInput)
 
     tableFile.close()
 
